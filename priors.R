@@ -12,7 +12,7 @@
 
 # Load and prep data
 
-d <- read.csv("data/fractals_1_1minutebins.csv") %>%
+d <- read_csv("data/fractals_1_1minutebins.csv") %>%
   clean_names()
   
 # Define general regex cleaning function
@@ -84,24 +84,28 @@ tmp <- bind_rows(df_t1_base, df_t1_med, df_t2_base, df_t2_med) %>%
 
 #----------------------- Specify a Bayesian model ----------------------
 
+options(mc.cores = parallel::detectCores())
+
 # Build model with vague and uninformative priors
 
-m1 <- brm(a1 ~ condition*state*minute,
+m1 <- brm(value ~ condition*state*minute,
           data = tmp, iter = 2000, chains = 3, seed = 123)
 
 # Visualise distribution of coefficient posteriors to get correct prior shape for Fractals 2.0
 
+CairoPNG("output/fractals_1_posterior.png",800,600)
 as.data.frame(m1) %>%
   clean_names() %>%
-  dplyr::select(c(b_condition, b_state, b_minute, b_intx)) %>%
-  gather(key = parameter, value = value, 1:4) %>%
+  dplyr::select(-c(b_intercept, sigma, lp)) %>%
+  gather(key = parameter, value = value, 1:7) %>%
   ggplot(aes(x = value)) +
-  geom_histogram(binwidth = 0.001, fill = "steelblue2") +
+  geom_histogram(binwidth = 0.01, fill = "steelblue2") +
   labs(title = "Posterior distributions for Fractals 1.0",
        x = "Coefficient Value",
        y = "Frequency") +
   theme_bw() +
   facet_wrap(~parameter)
+dev.off()
   
 #----------------------- Save priors for future use -------------------
   
@@ -109,13 +113,20 @@ as.data.frame(m1) %>%
 
 priors <- as.data.frame(m1) %>%
   clean_names() %>%
-  summarise(beta_condition_mean = mean(b_condition),
-            beta_condition_sd = sd(b_condition),
-            beta_state_mean = mean(b_state),
-            beta_state_sd = sd(b_state),
-            beta_minute_mean = mean(b_minute),
-            beta_minute_sd = sd(b_minute),
-            beta_intx_mean = mean(b_intx),
-            beta_intx_sd = sd(b_intx))
+  dplyr::select(-c(b_intercept, sigma, lp)) %>%
+  summarise(b_condition_t2_mean = mean(b_condition_t2),
+            b_condition_t2_sd = sd(b_condition_t2),
+            b_state_rest_mean = mean(b_state_rest),
+            b_state_rest_sd = sd(b_state_rest),
+            b_minute_mean = mean(b_minute),
+            b_minute_sd = sd(b_minute),
+            b_condition_t2_state_rest_mean = mean(b_condition_t2_state_rest),
+            b_condition_t2_state_rest_sd = sd(b_condition_t2_state_rest),
+            b_condition_t2_minute_mean = mean(b_condition_t2_minute),
+            b_condition_t2_minute_sd = sd(b_condition_t2_minute),
+            b_state_rest_minute_mean = mean(b_state_rest_minute),
+            b_state_rest_minute_sd = sd(b_state_rest_minute),
+            b_condition_t2_state_rest_minute_mean = mean(b_condition_t2_state_rest_minute),
+            b_condition_t2_state_rest_minute_sd = sd(b_condition_t2_state_rest_minute))
             
 save(priors, file = "data/priors.Rda")
