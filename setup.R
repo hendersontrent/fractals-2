@@ -9,8 +9,10 @@
 
 library(tidyverse)
 library(scales)
+library(janitor)
 library(brms)
 library(bayesplot)
+library(Cairo)
 
 # Create an output and data folder if none exists:
 
