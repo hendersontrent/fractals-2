@@ -14,7 +14,7 @@
 
 d <- read_csv("data/fractals_1_1minutebins.csv") %>%
   clean_names()
-  
+
 # Define general regex cleaning function
 
 time_cleaner <- function(data){
@@ -79,8 +79,8 @@ df_t2_med <- time_cleaner(df_t2_med) %>%
 # Bind files together
 
 tmp <- bind_rows(df_t1_base, df_t1_med, df_t2_base, df_t2_med) %>%
-  mutate(state = as.factor(state)) %>%
-  mutate(condition = as.factor(condition))
+  mutate(state = ifelse(state == "Rest", 1, 2),
+         condition = ifelse(condition == "T1", 1, 2))
 
 #----------------------- Specify a Bayesian model ----------------------
 
@@ -88,15 +88,21 @@ options(mc.cores = parallel::detectCores())
 
 # Build model with vague and uninformative priors
 
-m1 <- brm(value ~ condition*state*minute,
-          data = tmp, iter = 2000, chains = 3, seed = 123)
+stan_data <- list(N = nrow(tmp),
+                  state = tmp$state,
+                  condition = tmp$condition,
+                  minute = tmp$minute,
+                  y = tmp$value)
+
+m1 <- stan(file = "stan/prior.stan",
+           data = stan_data, iter = 2000, chains = 3, seed = 123)
 
 # Visualise distribution of coefficient posteriors to get correct prior shape for Fractals 2.0
 
 CairoPNG("output/fractals_1_posterior.png",800,600)
 as.data.frame(m1) %>%
   clean_names() %>%
-  dplyr::select(-c(b_intercept, sigma, lp)) %>%
+  dplyr::select(c(2:8)) %>%
   gather(key = parameter, value = value, 1:7) %>%
   ggplot(aes(x = value)) +
   geom_histogram(binwidth = 0.01, fill = "steelblue2") +
@@ -106,27 +112,23 @@ as.data.frame(m1) %>%
   theme_bw() +
   facet_wrap(~parameter)
 dev.off()
-  
+
 #----------------------- Save priors for future use -------------------
-  
-# Save as .Rda to avoid needing to re-run model which can take time
+
+options(mc.cores = parallel::detectCores())
+
+# Save as .Rda to avoid needing to re-run model which can take a long time
 
 priors <- as.data.frame(m1) %>%
   clean_names() %>%
-  dplyr::select(-c(b_intercept, sigma, lp)) %>%
-  summarise(b_condition_t2_mean = mean(b_condition_t2),
-            b_condition_t2_sd = sd(b_condition_t2),
-            b_state_rest_mean = mean(b_state_rest),
-            b_state_rest_sd = sd(b_state_rest),
-            b_minute_mean = mean(b_minute),
-            b_minute_sd = sd(b_minute),
-            b_condition_t2_state_rest_mean = mean(b_condition_t2_state_rest),
-            b_condition_t2_state_rest_sd = sd(b_condition_t2_state_rest),
-            b_condition_t2_minute_mean = mean(b_condition_t2_minute),
-            b_condition_t2_minute_sd = sd(b_condition_t2_minute),
-            b_state_rest_minute_mean = mean(b_state_rest_minute),
-            b_state_rest_minute_sd = sd(b_state_rest_minute),
-            b_condition_t2_state_rest_minute_mean = mean(b_condition_t2_state_rest_minute),
-            b_condition_t2_state_rest_minute_sd = sd(b_condition_t2_state_rest_minute))
-            
+  dplyr::select(c(1:8)) %>%
+  summarise(alpha_mean = mean(alpha), alpha_sd = sd(alpha),
+            beta_2_mean = mean(beta_2), beta_2_sd = sd(beta_2),
+            beta_1_mean = mean(beta_1), beta_1_sd = sd(beta_1),
+            beta_3_mean = mean(beta_3), beta_3_sd = sd(beta_3),
+            beta_4_mean = mean(beta_4), beta_4_sd = sd(beta_4),
+            beta_6_mean = mean(beta_6), beta_6_sd = sd(beta_6),
+            beta_5_mean = mean(beta_5), beta_5_sd = sd(beta_5),
+            beta_7_mean = mean(beta_7), beta_7_sd = sd(beta_7))
+
 save(priors, file = "data/priors.Rda")

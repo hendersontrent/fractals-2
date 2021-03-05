@@ -10,7 +10,7 @@
 library(tidyverse)
 library(scales)
 library(janitor)
-library(brms)
+library(rstan)
 library(bayesplot)
 library(Cairo)
 
