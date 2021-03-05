@@ -113,12 +113,16 @@ m2 <- stan(file = "stan/fractal2.stan",
 
 # Diagnostic 1: Chain convergence
 
-mcmc_trace(m2)
+CairoPNG("output/fractals_2_traceplot.png",800,600)
+mcmc_trace(m2, regex_pars = c("beta_"))
+dev.off()
 
 # Diagnostic 2: LOO
 
+CairoPNG("output/fractals_2_loo.png",800,600)
 loo1 <- loo(m2, save_psis = TRUE)
 plot(loo1)
+dev.off()
 
 # Diagnostic 3: Posterior predictive checks
 
@@ -133,11 +137,16 @@ ppc_dens_overlay(y, yrep[samp100, ]) +
        y = "Count")
 dev.off()
 
-# Summative data visualisation
+# Summative data visualisations
 
 CairoPNG("output/fractals_2_posterior.png",800,600)
-mcmc_areas(m2, regex_pars = c("beta_1", "beta_2", "beta_3", 
-                              "beta_4", "beta_5", "beta_6", "beta_7"),
-           area_method = "scaled height") +
+stan_hist(m2, pars = c("beta_1", "beta_2", "beta_3", 
+                       "beta_4", "beta_5", "beta_6", "beta_7")) +
+  labs(title = "Coefficient posterior distributions")
+dev.off()
+
+CairoPNG("output/fractals_2_posterior_intervals.png",800,600)
+mcmc_intervals(m2, regex_pars = c("beta_1", "beta_2", "beta_3", 
+                              "beta_4", "beta_5", "beta_6", "beta_7")) +
   labs(title = "Coefficient posterior distributions")
 dev.off()

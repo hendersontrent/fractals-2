@@ -115,6 +115,8 @@ dev.off()
 
 #----------------------- Save priors for future use -------------------
 
+options(mc.cores = parallel::detectCores())
+
 # Save as .Rda to avoid needing to re-run model which can take a long time
 
 priors <- as.data.frame(m1) %>%
