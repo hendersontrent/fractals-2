@@ -114,6 +114,7 @@ m2 <- stan(file = "stan/fractal2.stan",
 # Diagnostic 1: Chain convergence
 
 CairoPNG("output/fractals_2_traceplot.png",800,600)
+color_scheme_set("mix-blue-red")
 mcmc_trace(m2, regex_pars = c("beta_"))
 dev.off()
 
@@ -131,6 +132,7 @@ set.seed(123)
 y <- tmp$value
 yrep <- extract(m2)[["y_rep"]]
 samp100 <- sample(nrow(yrep), 100)
+color_scheme_set("red")
 ppc_dens_overlay(y, yrep[samp100, ]) +
   labs(title = "Posterior predictive check",
        x = "HRV",
@@ -139,14 +141,36 @@ dev.off()
 
 # Summative data visualisations
 
+names <- list(
+  "beta_1" = "state",
+  "beta_2" = "condition",
+  "beta_3" = "minute",
+  "beta_4" = "state*condition",
+  "beta_5" = "state*minute",
+  "beta_6" = "condition*minute",
+  "beta_7" = "state*condition*minute"
+)
+
+my_labels <- function(variable,value){
+  return(names[value])
+}
+
 CairoPNG("output/fractals_2_posterior.png",800,600)
-stan_hist(m2, pars = c("beta_1", "beta_2", "beta_3", 
-                       "beta_4", "beta_5", "beta_6", "beta_7")) +
-  labs(title = "Coefficient posterior distributions")
+color_scheme_set("red")
+mcmc_hist(m2, pars = c("beta_1", "beta_2", "beta_3", 
+                       "beta_4", "beta_5", "beta_6", "beta_7"),
+          facet_args = list(labeller = my_labels)) +
+  labs(title = "Coefficient posterior distributions") +
+  geom_vline(xintercept = 0, lty = "dashed", colour = "black", size = 1)
 dev.off()
 
-CairoPNG("output/fractals_2_posterior_intervals.png",800,600)
-mcmc_intervals(m2, regex_pars = c("beta_1", "beta_2", "beta_3", 
-                              "beta_4", "beta_5", "beta_6", "beta_7")) +
-  labs(title = "Coefficient posterior distributions")
-dev.off()
+# Posterior table
+
+posts <- as.data.frame(m2) %>%
+  dplyr::select(c(3:9)) %>%
+  gather(key = coefficient, value = value, 1:7) %>%
+  group_by(coefficient) %>%
+  summarise(estimate = mean(value),
+            lower = quantile(value, probs = 0.05),
+            upper = quantile(value, probs = 0.95)) %>%
+  ungroup()
