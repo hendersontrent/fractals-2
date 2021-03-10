@@ -11,3 +11,7 @@ The project builds off a modular and logical code base. The `setup.R` script loa
 2. `posteriors.R` - loads in and preprocesses data and runs a Bayesian regression model using the extracted priors from `priors.R` to produce better posterior estimates for the dataset at hand. The specificity of priors is important at these low sample sizes as the likelihood is unlikely to dominate the prior in posterior generation.
 
 Any additional code is likely a standalone piece.
+
+## Indicative outputs
+
+![](https://github.com/hendersontrent/fractals-2/blob/main/output/fractals_2_posterior.png)
