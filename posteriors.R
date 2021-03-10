@@ -142,11 +142,17 @@ dev.off()
 CairoPNG("output/fractals_2_posterior.png",800,600)
 stan_hist(m2, pars = c("beta_1", "beta_2", "beta_3", 
                        "beta_4", "beta_5", "beta_6", "beta_7")) +
-  labs(title = "Coefficient posterior distributions")
+  labs(title = "Coefficient posterior distributions") +
+  geom_vline(xintercept = 0, lty = "dashed", colour = "grey50", size = 1)
 dev.off()
 
-CairoPNG("output/fractals_2_posterior_intervals.png",800,600)
-mcmc_intervals(m2, regex_pars = c("beta_1", "beta_2", "beta_3", 
-                              "beta_4", "beta_5", "beta_6", "beta_7")) +
-  labs(title = "Coefficient posterior distributions")
-dev.off()
+# Posterior table
+
+posts <- as.data.frame(m2) %>%
+  dplyr::select(c(3:9)) %>%
+  gather(key = coefficient, value = value, 1:7) %>%
+  group_by(coefficient) %>%
+  summarise(estimate = mean(value),
+            lower = quantile(value, probs = 0.05),
+            upper = quantile(value, probs = 0.95)) %>%
+  ungroup()
