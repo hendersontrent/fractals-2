@@ -19,8 +19,10 @@ tmp <- process_hrv_data(data = "data/fractals_2_1minutebins.csv")
 
 # Fit model
 
+options(mc.cores = parallel::detectCores())
+
 m1 <- brm(value ~ 1 + state + condition + minute + state*condition*minute + (1 + minute | id),
-          data = tmp2,
+          data = tmp,
           family = gaussian,
           prior = c(set_prior(prior = "normal(5, 2)", class = "Intercept"),
                     set_prior(prior = "normal(0, 2.5)", class = "b", coef = "state"),
@@ -37,4 +39,17 @@ m1 <- brm(value ~ 1 + state + condition + minute + state*condition*minute + (1 +
 
 #---------------- Data visualisation -----------------
 
+# Posterior predictive checks
 
+pp_check(m1, nsamples = 100)
+
+# Chain convergence
+
+mcmc_trace(m1, regex_pars = "b_")
+
+# Coefficients
+
+mcmc_areas(m1, pars = c("b_state", "b_condition", "b_minute",
+                        "b_state:condition", "b_state:minute", "b_condition:minute",
+                        "b_state:condition:minute"), area_method = "scaled height",
+           prob = 0.8)
