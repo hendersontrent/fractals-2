@@ -53,3 +53,7 @@ mcmc_areas(m1, pars = c("b_state", "b_condition", "b_minute",
                         "b_state:condition", "b_state:minute", "b_condition:minute",
                         "b_state:condition:minute"), area_method = "scaled height",
            prob = 0.8)
+
+# Summary
+
+summary(m1)
